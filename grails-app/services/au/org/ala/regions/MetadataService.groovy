@@ -41,7 +41,9 @@ class MetadataService {
         QUERY_CONTEXT = grailsApplication.config.getProperty('biocache.queryContext')
         ENABLE_OBJECT_INTERSECTION = grailsApplication.config.getProperty('layers.enableObjectIntersection')?.toBoolean() ?: false
         INTERSECT_OBJECT = grailsApplication.config.getProperty('layers.intersectObject')
-        SPECIES_LIST_URL = grailsApplication.config.getProperty('speciesList.baseURL')
+        // API base for /ws calls; speciesList.baseURL remains the UI base used for links (see _speciesLists.gsp).
+        // Falls back to speciesList.baseURL for deployments where UI and API share one base URL.
+        SPECIES_LIST_URL = grailsApplication.config.getProperty('speciesListService.baseURL') ?: grailsApplication.config.getProperty('speciesList.baseURL')
 
         //add biocache.filter to HUB_FILTER
         if (ENABLE_HUB_DATA) {
@@ -231,7 +233,9 @@ class MetadataService {
     }
 
     def getSpeciesLists() {
-        String url = "${SPECIES_LIST_URL}/ws/speciesList?isRegionsApproved=eq:true&max=1000"
+        // Only authoritative lists: the occurrence filter (speciesListUid:<dr>) relies on pipelines indexing
+        // species_list_uid, which is done for authoritative lists only.
+        String url = "${SPECIES_LIST_URL}/ws/speciesList?isAuthoritative=eq:true&max=1000"
         def speciesLists = getJSON(url)
 
         speciesLists.lists.collect { item ->
